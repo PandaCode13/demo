@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: itom-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: itom
+      POSTGRES_USER: itom
+      POSTGRES_PASSWORD: itom_demo
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./bdd/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U itom -d itom"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  web:
+    build: ./web
+    container_name: itom-web
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    # Variables côté conteneur (valeurs de démonstration à adapter).
+    environment:
+      DATABASE_URL: postgres://itom:itom_demo@db:5432/itom
+      JWT_SECRET: changer-moi-secret-demo
+      JWT_EXPIRES_IN: "43200"
+      CRON_TOKEN: changer-moi-jeton-cron-demo
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
